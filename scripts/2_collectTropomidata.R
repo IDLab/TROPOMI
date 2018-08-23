@@ -30,7 +30,7 @@ rm (singleNO2Obs)
 NO2Obs <- NO2Obs[!is.na(NO2Obs$Obs),]
 
 #load AIS data
-ShipData <- read.csv2("data/AISData 2018-08-22 23-44-57.csv", sep = ",", stringsAsFactors = FALSE)
+ShipData <- read.csv2("data/AISData_2018-08-22_23-44-57.csv", sep = ",", stringsAsFactors = FALSE)
 ShipData$Latitude <- as.numeric(ShipData$Latitude)
 ShipData$Longitude <- as.numeric(ShipData$Longitude)
 ShipData$TimeStamp <- as.POSIXct(ShipData$TimeStamp)
@@ -92,7 +92,6 @@ CapeCosmosMatches <- cbind (CapeCosmosLoc,CapeCosmosObs[matches$nn.idx,])
 CapeCosmosMatches$DeltaT <- CapeCosmosMatches[,1]-CapeCosmosMatches[,11]
 
 CapeCosmosObs1<- unique(CapeCosmosObs[matches$nn.idx,])
-CapeCosmosmatches[,1]-CapeCosmosmatches[,11]
 
 plot2<- g+
   geom_point(data = CapeCosmosObs1, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, size = 5) +
