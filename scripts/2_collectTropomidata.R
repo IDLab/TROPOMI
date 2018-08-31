@@ -15,6 +15,7 @@ NO2Obs <- data.frame(Longitude = as.integer(),
                      Latitude = as.integer(),
                      Obstime = as.character(),
                      Obs = as.integer(),
+                     CRFNO2Window = as.integer(),
                      stringsAsFactors = FALSE)
 
 #Loop through all available files
@@ -43,7 +44,7 @@ ShipData <- filter(ShipData, ShipData$TimeStamp > as.POSIXct("2018-08-10 00:00:0
 #get a map from google
 lon = mean(NO2Obs$Longitude)
 lat = mean(NO2Obs$Latitude)
-oceanmap <- get_map(location = c(lon, lat), zoom =6)
+oceanmap <- get_map(location = c(lon, lat), zoom =4)
 g <- ggmap(oceanmap)
 
 #Filter ShipData and NO2Obs on boundix box of map
@@ -60,10 +61,10 @@ NO2Obs <- filter(NO2Obs, Latitude < BoundingBox$ur.lat &
 
 
 #plot  all Obs and all ShipLocs in a single map to the map
-#g+
-#  geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, size = 0.01) +
-#  scale_color_gradientn(colours = terrain.colors(7)) +
-#  geom_point(data = ShipData, aes(x = Longitude, y = Latitude, shape = Name)) 
+g+
+  geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 0.01) +
+  scale_color_gradientn(colours = terrain.colors(7)) +
+  geom_point(data = ShipData, aes(x = Longitude, y = Latitude, shape = Name)) 
 
 ######Focus on Cape Cosmos or NSS HONESTY
 CapeCosmosLoc <- filter(ShipData, Name == "CAPE COSMOS")
@@ -81,7 +82,7 @@ CapeCosmosObs <- filter(NO2Obs, Latitude < BoundingBox$ur.lat &
 
 #plot Obs and Locs of CAPE COSMOS
 plot1<-g+
-  geom_point(data = CapeCosmosObs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, size = 5) +
+  geom_point(data = CapeCosmosObs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 6) +
   scale_color_gradientn(colours = terrain.colors(7)) +
   geom_point(data = CapeCosmosLoc, aes(x = Longitude, y = Latitude, shape = Name)) 
 

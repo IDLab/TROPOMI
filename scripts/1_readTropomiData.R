@@ -32,11 +32,17 @@ fReadTropomiData <- function (filename) {
   time<-ncvar_get(rawdata, temp)
   time <- parse_date_time(time, orders = "ymd HMS")
   
+  #extract cloud radiance fraction nitrongendioxide window
+  #rawdata$var[[61]]$name
+  temp <-rawdata$var[[61]]
+  CRFNO2Window<-ncvar_get(rawdata, temp)
+  
   #define the dataframe
   fileNO2Obs <- data.frame(Latitude = as.integer(),
                            Longitude = as.integer(),
                            time = as.character(),
                            Obs = as.integer(),
+                           CRFNO2Window = as.integer (),
                            stringsAsFactors = FALSE)
   
   #Function to create a list with all wanted data
@@ -45,12 +51,14 @@ fReadTropomiData <- function (filename) {
                              Longitude = rep(as.integer(NA), length(time)),
                              time = rep(as.character(NA), length(time)),
                              Obs = rep(as.integer(NA), length(time)),
+                             CRFNO2Window = rep(as.integer(NA), length(time)),
                              stringsAsFactors = FALSE)
     
     tempNO2Obs$Longitude <- Longitude[i,]
     tempNO2Obs$Latitude <- Latitude[i,]
     tempNO2Obs$time <- time
     tempNO2Obs$Obs <- tropo_column[i,]
+    tempNO2Obs$CRFNO2Window <- CRFNO2Window[i,]
     return(tempNO2Obs)
   }
   
@@ -59,6 +67,7 @@ fReadTropomiData <- function (filename) {
   #from list to df
   fileNO2Obs<-do.call(rbind, listObs)
   
+  #fileNO2Obs <- filter(fileNO2Obs, )
   return (fileNO2Obs)
 }
 
