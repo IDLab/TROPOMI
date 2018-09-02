@@ -67,7 +67,7 @@ fReadTropomiData <- function (filename) {
   #from list to df
   fileNO2Obs<-do.call(rbind, listObs)
   
-  #fileNO2Obs <- filter(fileNO2Obs, )
+  fileNO2Obs <- filter(fileNO2Obs, CRFNO2Window <=0.1)
   return (fileNO2Obs)
 }
 
