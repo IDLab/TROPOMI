@@ -7,6 +7,7 @@ library(cowplot)
 library (geosphere)
 
 source("scripts/1_readTropomiData.R")
+source("1_collectSingleShipObs")
 
 filedir <- c('./bronnen')
 Filenames <- list.files(path = filedir)
@@ -82,8 +83,15 @@ if (FALSE) {
   g+
     geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 2) +
     scale_color_gradientn(colours = terrain.colors(7)) +
-    geom_point(data = filterShipData, aes(x = Longitude, y = Latitude))
+    geom_point(data = ShipData, aes(x = Longitude, y = Latitude))
 }
+
+################
+#Call function to get individual ship data
+fCollectSingleShipObsList <- fCollectSingleShipObs(NO2Obs, ShipData, ShipName)
+SingleShipSurround1 <- fCollectSingleShipObsList$SingleShipSurround1
+bestSingleShipLoc1 <- fCollectSingleShipObsList$bestSingleShipLoc
+##############
 
 ######Focus LEOPOLD OLDENDORFF
 SingleShipLoc <- filter(ShipData, Name == "LEOPOLD OLDENDORFF")
