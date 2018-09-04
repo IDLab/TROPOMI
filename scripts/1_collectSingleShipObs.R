@@ -1,11 +1,9 @@
 library (RANN)
 library (dplyr)
 
-fCollectSingleShipObs <- function (NO2Obs, Shipdata, Shipname) {
+fCollectSingleShipObs <- function (NO2Obs, Shipdata, ShipName) {
 
-Shipname <- "LEOPOLD OLDENDORFF"
-  
-SingleShipLoc <- filter(ShipData, Name == Shipname)
+SingleShipLoc <- filter(ShipData, Name == ShipName)
 
 #extract nearest neighbours observations of known AIS locations
 matches <- nn2(NO2Obs[,1:2], SingleShipLoc[,2:3],1)
@@ -18,9 +16,9 @@ SingleShipMatches$DeltaT <- SingleShipMatches[,1]-SingleShipMatches[,11]
 best <- which.min(abs(SingleShipMatches$DeltaT))
 nextbest <- nn2(SingleShipMatches$DeltaT, SingleShipMatches$DeltaT[best],2)$nn.idx[2]
 
+#build a df on the best available match for ship location
 bestSingleShipLoc <- filter (SingleShipLoc, TimeStamp == SingleShipMatches$TimeStamp[best])
 
-#####
 #Interpolate to increase matching the right spot
 
 #build a data.frame for clarity
@@ -46,12 +44,25 @@ bestSingleShipLoc$Origin <- ifelse(bestSingleShipLoc$Heading[1]>180,bestSingleSh
 #clean up mess of intermediate vars
 rm(nrows,best, nextbest, idx, SingleShipInterpol)
 
+#Plot results of ship location interpolation and NO2Obs in vicinity
+if (FALSE) {
+lon = mean(SingleShipLoc$Longitude)
+lat = mean(SingleShipLoc$Latitude)
+oceanmap <- get_map(location = c(lon, lat), zoom =8)
+g <- ggmap(oceanmap)
+g+
+  geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 6) +
+  scale_color_gradientn(colours = terrain.colors(7)) +
+  geom_point(data = SingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name)) +
+  geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name), size = 5) 
+}
+
 ############
 #Match surrounding cells with bestSingleShipLoc, calculate diff in concentrations and plot
 
 #first determine which obs are surrounding the ship
-matches <- nn2(SingleShipObs[,1:2], bestSingleShipLoc[,2:3],100)
-SingleShipSurround <- SingleShipObs[matches$nn.idx,]
+matches <- nn2(NO2Obs[,1:2], bestSingleShipLoc[,2:3],100)
+SingleShipSurround <- NO2Obs[matches$nn.idx,]
 SingleShipSurround$DistToOrg <- as.vector (matches$nn.dists)
 #determine for each point the difference in Obs conc with the cell where the ship is at >0 means higher than where ship is. 
 refConc <-  SingleShipSurround$Obs[which(SingleShipSurround$DistToOrg == min(SingleShipSurround$DistToOrg))]
@@ -81,6 +92,9 @@ for (i in 1:(length(BearingSectors)-1)) {
   SingleShipSurround$PolarSector[between(SingleShipSurround$Bearing, BearingSectors[i], BearingSectors[i+1])] <- BearingSectors[i]
   SingleShipSurround$DistanceSector[between(SingleShipSurround$DistToOrg, DistanceSectors[i], DistanceSectors[i+1])] <- i
 }
+#To facilitate plotting of actual course in polar plot, it is necessary to construct an adjusted origin course as plot orientation is adjusted to center sector on origin.
+bestSingleShipLoc$AdjOrigin <- bestSingleShipLoc$Origin-BearingSectors[1]+BearingShift
+bestSingleShipLoc$PlotBearing <- BearingSectors[1]
 
 fCollectSingleShipObsList <- list("SingleShipSurround" = SingleShipSurround, "bestSingleShipLoc" = bestSingleShipLoc)
 return (fCollectSingleShipObsList)

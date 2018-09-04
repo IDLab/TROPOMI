@@ -1,3 +1,5 @@
+#This script will read indiviual TROPOMI data files and collect and filter requiredm data.
+
 library (ncdf4)
 library (lubridate)
 library(dplyr)
