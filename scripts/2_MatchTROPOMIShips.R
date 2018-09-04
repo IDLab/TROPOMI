@@ -6,36 +6,11 @@ library(ggplot2)
 library(cowplot)
 library (geosphere)
 
-source("scripts/1_readTropomiData.R")
-source("1_collectSingleShipObs")
-
-filedir <- c('./bronnen')
-Filenames <- list.files(path = filedir)
-
-#define the dataframe
-NO2Obs <- data.frame(Longitude = as.integer(),
-                     Latitude = as.integer(),
-                     Obstime = as.character(),
-                     Obs = as.integer(),
-                     CRFNO2Window = as.integer(),
-                     stringsAsFactors = FALSE)
-
-#Loop through all available files
-for (i in 1:length(Filenames)) {
-singleNO2Obs <- fReadTropomiData(Filenames[i])
-NO2Obs <- rbind(NO2Obs,singleNO2Obs)
-}
-
-#clean up
-rm (singleNO2Obs)
-
-#remove NAs
-NO2Obs <- NO2Obs[!is.na(NO2Obs$Obs),]
-
+load ("data/NO2Obs.Rda")
 
 ##########
 #load AIS data
-ShipData <- read.csv2("./data/AISData_2018_08_31_12_52_17.csv", sep = ",", stringsAsFactors = FALSE)
+ShipData <- read.csv2("./data/AISData_2018_09_03_23_23_58.csv", sep = ",", stringsAsFactors = FALSE)
 ShipData$Latitude <- as.numeric(ShipData$Latitude)
 ShipData$Longitude <- as.numeric(ShipData$Longitude)
 ShipData$Heading <- as.numeric(ShipData$Heading)
@@ -57,7 +32,7 @@ if (FALSE) {
 #get a map from google
 lon = mean(NO2Obs$Longitude)
 lat = mean(NO2Obs$Latitude)
-oceanmap <- get_map(location = c(lon, lat), zoom =4)
+oceanmap <- get_map(location = c(lon, lat), zoom =2)
 g <- ggmap(oceanmap)
 
 #Filter ShipData and NO2Obs on boundix box of map
@@ -81,17 +56,13 @@ filterShipData <- filter(ShipData, Latitude < BoundingBox$ur.lat &
 #plot  all Obs and all ShipLocs in a single map to the map
 if (FALSE) {
   g+
-    geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 2) +
+    geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 0.002) +
     scale_color_gradientn(colours = terrain.colors(7)) +
-    geom_point(data = ShipData, aes(x = Longitude, y = Latitude))
+    geom_point(data = filterShipData, aes(x = Longitude, y = Latitude))
 }
 
-################
-#Call function to get individual ship data
-fCollectSingleShipObsList <- fCollectSingleShipObs(NO2Obs, ShipData, ShipName)
-SingleShipSurround1 <- fCollectSingleShipObsList$SingleShipSurround1
-bestSingleShipLoc1 <- fCollectSingleShipObsList$bestSingleShipLoc
-##############
+
+unique(ShipData$Name)
 
 ######Focus LEOPOLD OLDENDORFF
 SingleShipLoc <- filter(ShipData, Name == "LEOPOLD OLDENDORFF")
@@ -224,5 +195,3 @@ rm(BearingSectors, BearingShift, dif, DistanceSectors, matches, neares, origin, 
 
 
 rm(temp)
-
-
