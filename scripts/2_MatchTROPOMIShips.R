@@ -1,6 +1,7 @@
 #This script will read both satellite and shipdata, process into individual ship maps and visualize results.
 
 #Calling required libraries.
+library (data.table)
 library (ggmap)
 library (RANN)
 library (dplyr)
@@ -58,13 +59,27 @@ if (FALSE) {
 ShipNames <- unique(ShipData$Name)
   
 fCollectSingleShip <- function(i) {
-  fCollectSingleShipObsList  <- fCollectSingleShipObs(NO2Obs, ShipData, ShipNames[i])
-  return(fCollectSingleShipObsList)
+  fCollectSingleShipList  <- fCollectSingleShipObs(NO2Obs, ShipData, ShipNames[i])
+  return(fCollectSingleShipList)
 }
 
-test<-sapply (7:8,fCollectSingleShip )
+ShipObsList <-sapply (7:8,fCollectSingleShip)
+
+index <- c(1,3)
+test3<- do.call(rbind, ShipObsList[index])
+test3<- rbindlist(ShipObsList[index], use.names=TRUE) #supposedly the faster one
+
+
+for (i in 1:length(ShipObsList)) {
+  i %% 2 == 0
+  if (i==2) {ShipSurround <- as.data.frame(ShipObsList[i])}
+  if (i==4) {ShipSurround <- rbind(ShipSurround, as.data.frame(ShipObsList[i]))}
+}
+
 test2<-do.call(rbind.data.frame, test)
 unlist(test, recursive = FALSE)
+str(test)
+length(test)
 
 ################
 #Call function to get individual ship data
