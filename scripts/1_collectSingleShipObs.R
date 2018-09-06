@@ -1,8 +1,9 @@
+library(geosphere)
 library (RANN)
 library (dplyr)
 
 fCollectSingleShipObs <- function (NO2Obs, Shipdata, ShipName) {
-
+#ShipName <- ShipNames[1]
 SingleShipLoc <- filter(ShipData, Name == ShipName)
 
 #extract nearest neighbours observations of known AIS locations
@@ -44,26 +45,13 @@ bestSingleShipLoc$Origin <- ifelse(bestSingleShipLoc$Heading[1]>180,bestSingleSh
 #clean up mess of intermediate vars
 rm(nrows,best, nextbest, idx, SingleShipInterpol)
 
-#Plot results of ship location interpolation and NO2Obs in vicinity
-if (FALSE) {
-lon = mean(SingleShipLoc$Longitude)
-lat = mean(SingleShipLoc$Latitude)
-oceanmap <- get_map(location = c(lon, lat), zoom =8)
-g <- ggmap(oceanmap)
-g+
-  geom_point(data = NO2Obs, aes(x = Longitude, y = Latitude, color = Obs), alpha = 0.6, shape = 15, size = 6) +
-  scale_color_gradientn(colours = terrain.colors(7)) +
-  geom_point(data = SingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name)) +
-  geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name), size = 5) 
-}
-
 ############
 #Match surrounding cells with bestSingleShipLoc, calculate diff in concentrations and plot
 
 #first determine which obs are surrounding the ship
 matches <- nn2(NO2Obs[,1:2], bestSingleShipLoc[,2:3],100)
 SingleShipSurround <- NO2Obs[matches$nn.idx,]
-SingleShipSurround$DistToOrg <- as.vector (matches$nn.dists)
+SingleShipSurround$DistToOrg <- distGeo(cbind(SingleShipSurround$Longitude,SingleShipSurround$Latitude), c(bestSingleShipLoc$Longitude, bestSingleShipLoc$Latitude))/1000
 #determine for each point the difference in Obs conc with the cell where the ship is at >0 means higher than where ship is. 
 refConc <-  SingleShipSurround$Obs[which(SingleShipSurround$DistToOrg == min(SingleShipSurround$DistToOrg))]
 SingleShipSurround$DeltaConc <- SingleShipSurround$Obs-refConc
@@ -72,7 +60,7 @@ origin <-c(bestSingleShipLoc$Longitude,bestSingleShipLoc$Latitude)
 SingleShipSurround$Bearing <- sapply(1:nrow(SingleShipSurround), function (x) {bearingRhumb(origin,c(SingleShipSurround$Longitude[x],SingleShipSurround$Latitude[x]))})
 
 ##assign Polar sector and Distance sector to the Obs surrounding the ship
-#YOU MUST USE AN EVEN NUMBER OF SECTORS, CURRENTLY ALLIGNMENT OF SECTORS IS BASED ON HEADING, NOT ORIGIN
+#YOU MUST USE AN EVEN NUMBER OF SECTORS
 step <- 360/20
 BearingSectors <- seq(step/2,360-step/2, by = step)
 #modify sectors so that centre of a sector will match the ships heading 
@@ -92,10 +80,35 @@ for (i in 1:(length(BearingSectors)-1)) {
   SingleShipSurround$PolarSector[between(SingleShipSurround$Bearing, BearingSectors[i], BearingSectors[i+1])] <- BearingSectors[i]
   SingleShipSurround$DistanceSector[between(SingleShipSurround$DistToOrg, DistanceSectors[i], DistanceSectors[i+1])] <- i
 }
+
+#Add a name to which the Obs is attached
+SingleShipSurround$Name <- bestSingleShipLoc$Name
+
+#Normalize on Latitude to facilitate plotting later on
+bestSingleShipLoc$normLatitude <- bestSingleShipLoc$Latitude-bestSingleShipLoc$Latitude
+SingleShipSurround$normLatitude <- SingleShipSurround$Latitude - bestSingleShipLoc$Latitude
+
 #To facilitate plotting of actual course in polar plot, it is necessary to construct an adjusted origin course as plot orientation is adjusted to center sector on origin.
-bestSingleShipLoc$AdjOrigin <- bestSingleShipLoc$Origin-BearingSectors[1]+BearingShift
+# also add a Bearing on shift of first sector from North as true course of sector
+#bestSingleShipLoc$AdjOrigin <- bestSingleShipLoc$Origin-BearingSectors[1]+BearingShift
+bestSingleShipLoc$AdjOrigin <- bestSingleShipLoc$Origin
 bestSingleShipLoc$PlotBearing <- BearingSectors[1]
 
+#Plot results of ship location interpolation and NO2Obs
+if (FALSE) {
+  lon = mean(bestSingleShipLoc$Longitude)
+  lat = mean(bestSingleShipLoc$Latitude)
+  oceanmap <- get_map(location = c(lon, lat), zoom =9)
+  g <- ggmap(oceanmap)
+  g+
+    geom_point(data = SingleShipSurround, aes(x = Longitude, y = Latitude, color = DistToOrg), alpha = 0.6, shape = 15, size = 6) +
+    scale_color_gradientn(colours = terrain.colors(7)) +
+    geom_point(data = SingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name)) +
+    geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name), size = 5) 
+}
+SingleShipSurround<-filter(SingleShipSurround, DistToOrg < 100)
+
+#transfer two DFs with results into single list for return from funciton
 fCollectSingleShipObsList <- list("SingleShipSurround" = SingleShipSurround, "bestSingleShipLoc" = bestSingleShipLoc)
 return (fCollectSingleShipObsList)
 
