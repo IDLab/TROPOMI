@@ -72,7 +72,7 @@ fCollectSingleShip <- function(i) {
 }
 
 #call the function for specified number of Ships
-ShipObsList <-sapply (1:6,fCollectSingleShip)
+ShipObsList <-sapply (1:16,fCollectSingleShip)
 
 #restructure list into dataframes
 index <- seq(1, length (ShipObsList), by =2)
@@ -80,6 +80,9 @@ SingleShipSurround <- rbindlist(ShipObsList[index], use.names=TRUE)
 index <- seq(2, length (ShipObsList), by =2)
 bestSingleShipLoc <- rbindlist(ShipObsList[index], use.names=TRUE) 
 rm(index)
+
+#remove any ship without any datapoints in the selected area
+bestSingleShipLoc <- filter(bestSingleShipLoc, Name %in% unique(SingleShipSurround$Name))
 
 #########
 #plot Obs and Locs of SingleShips
@@ -95,6 +98,9 @@ plot1<-g+
   geom_point(data = ShipData, aes(x = Longitude, y = Latitude)) #+
 #  geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = Latitude, shape = Name), size = 5) 
 
+#SingleShipSurround<- filter(SingleShipSurround, Name == "IZKI")
+#bestSingleShipLoc <- filter(bestSingleShipLoc, Name == "IZKI")
+
 ##########
 #Build datastructure to plot in polar, each sector has average of DeltaConc in area
 RadialPlotData<-SingleShipSurround %>%
@@ -105,8 +111,8 @@ RadialPlotData<-SingleShipSurround %>%
 plot4 <- ggplot() +
   geom_point(data = SingleShipSurround, aes(x = Longitude, y = normLatitude, color = DeltaConc),alpha = 0.6, shape = 15, size = 6) +
   scale_color_gradientn(colours = cm.colors(12)) +
-  geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = normLatitude, shape = Name), size = 5, color = "red") +
-  facet_grid (cols = vars(Name), scales = "free") 
+  geom_point(data = bestSingleShipLoc, aes(x = Longitude, y = normLatitude), size = 5, color = "red") +
+  facet_wrap (~Name, nrow = 4, scales = "free") 
 
 # This plot is a polar sectoral viwe
 plot5 <-ggplot(RadialPlotData, aes(fill = meanDeltaConc, xmin =PolarSector, ymin = DistanceSector, xmax = PolarSector+18, ymax = DistanceSector+1)) +
@@ -119,7 +125,7 @@ plot5 <-ggplot(RadialPlotData, aes(fill = meanDeltaConc, xmin =PolarSector, ymin
                        , high = "red") +
   geom_vline(data = bestSingleShipLoc, aes(xintercept = AdjOrigin), size = 1.5)
 
-plot_grid(plot4,plot5, labels = "AUTO", ncol =1)
+#plot_grid(plot4,plot5, labels = "AUTO", ncol =1)
 
 
 
